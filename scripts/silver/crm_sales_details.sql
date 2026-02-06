@@ -1,3 +1,9 @@
+/*
+This script will insert the data from the bronze.crm_sales_details Table
+into the silver.crm_sales_details Table.  It also shows some of the scripts
+used to check the data.
+*/
+
 INSERT INTO silver.crm_sales_details (
 		sls_ord_num,
 		sls_prd_key,
