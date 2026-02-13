@@ -160,3 +160,35 @@ SUM(total_sales) OVER () overall_sales,
 CONCAT(ROUND((CAST (total_sales AS FLOAT) / SUM(total_sales) OVER ()) * 100, 2), '%') AS percentage_of_total
 FROM category_sales	
 ORDER BY total_sales DESC
+
+
+
+	
+-- Data Segmentation
+-- Group the data based on a specific range.
+-- Helps understand the correlation between two measures.
+-- [Measure]		By	[Measure]
+-- Total Products	By	Sales Range
+-- Total Customers	By	Age
+
+
+/* Segment products into cost ranges and
+count how many products fall into each segment */
+WITH product_segment AS (
+	SELECT
+	product_key,
+	product_name,
+	cost,
+	CASE WHEN cost < 100 THEN 'Below 100'
+		 WHEN cost BETWEEN 100 AND 500 THEN '100-500'
+		 WHEN cost BETWEEN 500 AND 1000 THEN '500-1000'
+		 ELSE 'Above 1000'
+	END cost_range
+	FROM gold.dim_products
+)
+SELECT
+cost_range,
+COUNT(product_key) AS total_products
+FROM product_segment
+GROUP BY cost_range
+ORDER BY total_products DESC
