@@ -192,3 +192,68 @@ COUNT(product_key) AS total_products
 FROM product_segment
 GROUP BY cost_range
 ORDER BY total_products DESC
+
+
+
+
+/* Group customers into three segments based on their spending behavior:
+	- VIP:  Customer with at least 12 months of history and spending more than $5,000
+	- Regular:  Customers with at least 12 months of history but spending $5,000 or less.
+	- New:  Customers with a lifespan less than 12 months.
+And find the total number of customers by each group
+*/
+WITH customer_spending AS (
+	SELECT
+	c.customer_key,
+	SUM(f.sales_amount) AS total_spending,
+	MIN(order_date) AS first_order,
+	MAX(order_date) AS last_order,
+	DATEDIFF(month, MIN(order_date), MAX(order_date)) AS lifespan
+	FROM gold.dim_customers c
+	LEFT JOIN gold.fact_sales f
+	ON c.customer_key = f.customer_key
+	GROUP BY c.customer_key
+)
+SELECT 
+CASE WHEN lifespan >= 12 AND total_spending > 5000 THEN 'VIP'
+	 WHEN lifespan >= 12 AND total_spending <= 5000 THEN 'Regular'
+	 ELSE 'New'
+END customer_segment,
+COUNT(customer_key) AS total_customers
+FROM customer_spending
+GROUP BY
+CASE WHEN lifespan >= 12 AND total_spending > 5000 THEN 'VIP'
+	 WHEN lifespan >= 12 AND total_spending <= 5000 THEN 'Regular'
+	 ELSE 'New'
+END
+ORDER BY total_customers DESC
+
+
+-- Second way to get same data
+
+WITH customer_spending AS (
+	SELECT
+	c.customer_key,
+	SUM(f.sales_amount) AS total_spending,
+	MIN(order_date) AS first_order,
+	MAX(order_date) AS last_order,
+	DATEDIFF(month, MIN(order_date), MAX(order_date)) AS lifespan
+	FROM gold.dim_customers c
+	LEFT JOIN gold.fact_sales f
+	ON c.customer_key = f.customer_key
+	GROUP BY c.customer_key
+)
+SELECT 
+customer_segment,
+COUNT(customer_key) AS total_customers
+FROM (
+	SELECT
+	customer_key,
+	CASE WHEN lifespan >= 12 AND total_spending > 5000 THEN 'VIP'
+		 WHEN lifespan >= 12 AND total_spending <= 5000 THEN 'Regular'
+		 ELSE 'New'
+	END customer_segment
+	FROM customer_spending
+)t
+GROUP BY customer_segment
+ORDER BY total_customers DESC
